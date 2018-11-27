@@ -34,7 +34,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, function(e
 		let email = {
 			from: keys.mailgun.fromAddress,
 			to: keys.mailgun.toAddress,
-			subject: 'Saturn Error Found',
+			subject: 'Pluto Error Found',
 			html: '',
 		};
 		
