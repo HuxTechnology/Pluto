@@ -49,7 +49,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (err, clie
 			};
 			
 			mailgunData.forEach(data => {
-				email.html += `Malformed record found! Collection = ${data.collectionName} _id = ${data._id} qry = ${data.qry}<br>`;
+				email.html += `Collection = ${data.collectionName} _id = ${data._id} qry = ${data.qry}<br>`;
 			});
 			
 			MailgunInstance.messages().send(email, (error, body) => {
