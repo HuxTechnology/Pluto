@@ -11,7 +11,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			from: keys.mailgun.fromAddress,
 			to: keys.mailgun.toAddress,
 			subject: 'Error Initializing Pluto',
-			html: mongoError,
+			html: JSON.stringify(mongoError),
 		}, (mailgunError, body) => {
 			if(mailgunError) return console.log("Error sending email", mailgunError);
 		});
