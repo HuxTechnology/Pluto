@@ -63,8 +63,8 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				email.html += `Collection = ${data.collectionName} _id = ${data._id} qry = ${data.qry}<br>`;
 			});
 			
-			MailgunInstance.messages().send(email, (error, body) => {
-				if(err) return console.log("Error!", err);
+			MailgunInstance.messages().send(email, (mailgunError, body) => {
+				if(mailgunError) return console.log("Error sending email", mailgunError);
 			});
 		}
 		
