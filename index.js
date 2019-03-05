@@ -3,8 +3,21 @@ const Mailgun = require("mailgun-js");
 const keys = require('./keys');
 const config = require('./config');
 
+const MailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
+
 MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (err, client) => {
-	if(err) return console.log("Error!", err);
+	if(err) {
+		MailgunInstance.messages().send({
+			from: keys.mailgun.fromAddress,
+			to: keys.mailgun.toAddress,
+			subject: 'Error Initializing Pluto',
+			html: err,
+		}, (error, body) => {
+			if(err) return console.log("Error sending email", err);
+		});
+		
+		return;
+	}
 	
 	const db = client.db('hux');
 	
@@ -39,8 +52,6 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (err, clie
 		});
 		
 		if (mailgunData.length > 0) {
-			const MailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
-			
 			let email = {
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
