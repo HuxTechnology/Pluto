@@ -19,23 +19,28 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		return;
 	}
 	
-	const db = client.db('hux');
-	
+	let db;
 	let mailgunData = [];
 	let queryPromises = [];
 	
-	// Loop through collections
-	for (collectionName in config) {
-		collection = db.collection(collectionName);
+	// Loop through databases
+	for (databaseName in config) {
 		
-		// Loop through queries
-		queryPromises = queryPromises.concat(
-			config[collectionName].map(qry => ({
-				promise: collection.findOne(qry),
-				qry,
-				collectionName,
-			}))
-		);
+		currentDatabase = client.db(databaseName);
+		
+		// Loop through collections
+		for (collectionName in config[databaseName]) {
+			collection = currentDatabase.collection(collectionName);
+			
+			// Loop through queries
+			queryPromises = queryPromises.concat(
+				config[databaseName][collectionName].map(qry => ({
+					promise: collection.findOne(qry),
+					qry,
+					collectionName,
+				}))
+			);
+		}
 	}
 	
 	Promise.all(queryPromises.map(item => item.promise)).then(values => {
@@ -56,12 +61,24 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
 				subject: 'Pluto Error Found',
-				html: '',
+				html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
+					<th>Collection</th>
+					<th>Query</th>
+					<th>Example Id</th>
+					<th>Count</th>
+				</tr>`,
 			};
 			
 			mailgunData.forEach(data => {
-				email.html += `Collection = ${data.collectionName} _id = ${data._id} qry = ${data.qry}<br>`;
+				email.html += `<tr>
+					<td>${data.collectionName}</td>
+					<td>${data.qry}</td>
+					<td>${data._id}</td>
+					<td>1</td>
+				</tr>`;
 			});
+			
+			email.html += `</table>`;
 			
 			MailgunInstance.messages().send(email, (mailgunError, body) => {
 				if(mailgunError) return console.log("Error sending email", mailgunError);
