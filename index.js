@@ -24,36 +24,43 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	let queryPromises = [];
 	
 	// Loop through databases
-	for (databaseName in config) {
+	for (const databaseName in config) {
 		
-		currentDatabase = client.db(databaseName);
+		const currentDatabase = client.db(databaseName);
 		
 		// Loop through collections
-		for (collectionName in config[databaseName]) {
-			collection = currentDatabase.collection(collectionName);
+		for (const collectionName in config[databaseName]) {
+			const collection = currentDatabase.collection(collectionName);
 			
 			// Loop through queries
 			queryPromises = queryPromises.concat(
-				config[databaseName][collectionName].map(qry => ({
-					promise: collection.findOne(qry),
-					qry,
-					collectionName,
-				}))
+				config[databaseName][collectionName].map(qry => {
+					const cursor = collection.find(qry);
+					return {
+						cursor,
+						qry,
+						collectionName,
+					};
+				})
 			);
 		}
 	}
 	
-	Promise.all(queryPromises.map(item => item.promise)).then(values => {
+	// Resolve all document retrieval promises
+	Promise.all(queryPromises.map(item => item.cursor.next())).then(values => {
 		values.forEach((record, index) => {
+			
+			let {collectionName, qry, cursor} = queryPromises[index];
+			
 			if (record !== null) {
-				let {collectionName, qry} = queryPromises[index];
-				
 				mailgunData.push({
 					collectionName,
 					_id: record._id,
 					qry: JSON.stringify(qry),
 				});
 			}
+			
+			cursor.close();
 		});
 		
 		if (mailgunData.length > 0) {
@@ -65,7 +72,6 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 					<th>Collection</th>
 					<th>Query</th>
 					<th>Example Id</th>
-					<th>Count</th>
 				</tr>`,
 			};
 			
@@ -74,7 +80,6 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 					<td>${data.collectionName}</td>
 					<td>${data.qry}</td>
 					<td>${data._id}</td>
-					<td>1</td>
 				</tr>`;
 			});
 			
