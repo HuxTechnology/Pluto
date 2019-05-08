@@ -30,6 +30,14 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		for (const collectionName in config[databaseName]) {
 			const collection = currentDatabase.collection(collectionName);
 			
+			// Check that the database isn't empty
+			const generalCursor = collection.find({});
+			queryPromises.push({
+				cursor: generalCursor,
+				collectionName,
+				promise: generalCursor.count(),
+			});
+			
 			// Loop through queries
 			queryPromises = queryPromises.concat(
 				config[databaseName][collectionName].map(qry => {
@@ -38,6 +46,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 						cursor,
 						qry,
 						collectionName,
+						promise: cursor.next(),
 					};
 				})
 			);
@@ -45,16 +54,22 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	}
 	
 	// Resolve all document retrieval promises
-	Promise.all(queryPromises.map(item => item.cursor.next())).then(values => {
+	Promise.all(queryPromises.map(item => item.promise)).then(values => {
 		values.forEach((record, index) => {
-			
 			let {collectionName, qry, cursor} = queryPromises[index];
-			if (record !== null) {
-				
+			
+			if (typeof record === "object" && record !== null) {
 				mailgunData.push({
 					collectionName,
 					_id: record._id,
 					qry: JSON.stringify(qry),
+				});
+			}
+			else if (record === 0) {
+				mailgunData.push({
+					collectionName,
+					qry: 'No documents found.',
+					_id: 'N/A',
 				});
 			}
 			
