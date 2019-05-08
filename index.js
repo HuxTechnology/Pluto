@@ -48,8 +48,8 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	Promise.all(queryPromises.map(item => item.cursor.next())).then(values => {
 		values.forEach((record, index) => {
 			
+			let {collectionName, qry, cursor} = queryPromises[index];
 			if (record !== null) {
-				let {collectionName, qry} = queryPromises[index];
 				
 				mailgunData.push({
 					collectionName,
