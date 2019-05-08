@@ -35,6 +35,7 @@ In the above example, Pluto starts with the `Gmail` database. It would then loop
 ## keys.js
 ```
 module.exports = {
+	environment: 'production',	// Arbitrary string displayed in email
 	mailgun: {
 		apiKey: 'key-abc123',
 		domain: 'hux.com',
