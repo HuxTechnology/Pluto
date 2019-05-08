@@ -1,22 +1,46 @@
 Pluto combs your Mongo database for bugs.
 
-Its operation is simple – you give it a list of queries to check against, and Pluto will inform you if it finds any records. Here's an example:
+Its operation is simple – you give it a list of queries to check against, and Pluto will inform you if it finds any records.
+
+### Required Files
+- `config.js` - a JSON file containing the databases, collections, and an array of queries to check in a hierarchical format
+- `keys.js` – a JSON file containing API keys and important configurations
 
 ## config.js
 ```
 {
-	Products: [
-		{sku: null},
-		{price: {$gt: 5000}},
-	],
-	Stores: [
-		{storeID: null},
-	],
+	Gmail: {
+		Accounts: [
+			{_id: null},
+			{unread: {$lt: 5000}},
+		],
+		Messages: [
+			{htmlContent: {$not:{$type: 'string'}}},
+		],
+	},
+	Maps: {
+		Locations: [
+			lat: {$exists: false},
+			lng: {$exists: false},
+		],
+		Images: [
+			height: {$exists: false},
+		]
+	}
 }
 ```
 
-Pluto would check the `Products` collection for any records with no `sku` field or prices greater than $50. It would then check the `Stores` collection for records without `storeID`s.
+In the above example, Pluto starts with the `Gmail` database. It would then loop through both collections, `Accounts` and `Messages`, and check for any records that match the specified queries. 
 
-### Required Files
-- `keys.js` – a JSON file containing API keys and important configurations
-- `config.js` - a JSON file containing the collections and an array of queries to check
+## keys.js
+```
+module.exports = {
+	mailgun: {
+		apiKey: 'key-abc123',
+		domain: 'hux.com',
+		fromAddress: 'mongoBugs@hux.com',
+		toAddress: 'developers@hux.com',
+	},
+	mongoConnectionURL: 'mongodb://user:password@hux.com:27017',
+};
+```

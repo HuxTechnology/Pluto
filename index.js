@@ -19,36 +19,48 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		return;
 	}
 	
-	const db = client.db('hux');
-	
+	let db;
 	let mailgunData = [];
 	let queryPromises = [];
 	
-	// Loop through collections
-	for (collectionName in config) {
-		collection = db.collection(collectionName);
+	// Loop through databases
+	for (const databaseName in config) {
 		
-		// Loop through queries
-		queryPromises = queryPromises.concat(
-			config[collectionName].map(qry => ({
-				promise: collection.findOne(qry),
-				qry,
-				collectionName,
-			}))
-		);
+		const currentDatabase = client.db(databaseName);
+		
+		// Loop through collections
+		for (const collectionName in config[databaseName]) {
+			const collection = currentDatabase.collection(collectionName);
+			
+			// Loop through queries
+			queryPromises = queryPromises.concat(
+				config[databaseName][collectionName].map(qry => {
+					const cursor = collection.find(qry);
+					return {
+						cursor,
+						qry,
+						collectionName,
+					};
+				})
+			);
+		}
 	}
 	
-	Promise.all(queryPromises.map(item => item.promise)).then(values => {
+	// Resolve all document retrieval promises
+	Promise.all(queryPromises.map(item => item.cursor.next())).then(values => {
 		values.forEach((record, index) => {
+			
+			let {collectionName, qry, cursor} = queryPromises[index];
+			
 			if (record !== null) {
-				let {collectionName, qry} = queryPromises[index];
-				
 				mailgunData.push({
 					collectionName,
 					_id: record._id,
 					qry: JSON.stringify(qry),
 				});
 			}
+			
+			cursor.close();
 		});
 		
 		if (mailgunData.length > 0) {
@@ -56,12 +68,22 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
 				subject: 'Pluto Error Found',
-				html: '',
+				html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
+					<th>Collection</th>
+					<th>Query</th>
+					<th>Example Id</th>
+				</tr>`,
 			};
 			
 			mailgunData.forEach(data => {
-				email.html += `Collection = ${data.collectionName} _id = ${data._id} qry = ${data.qry}<br>`;
+				email.html += `<tr>
+					<td>${data.collectionName}</td>
+					<td>${data.qry}</td>
+					<td>${data._id}</td>
+				</tr>`;
 			});
+			
+			email.html += `</table>`;
 			
 			MailgunInstance.messages().send(email, (mailgunError, body) => {
 				if(mailgunError) return console.log("Error sending email", mailgunError);
