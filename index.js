@@ -19,13 +19,11 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		return;
 	}
 	
-	let db;
 	let mailgunData = [];
 	let queryPromises = [];
 	
 	// Loop through databases
 	for (const databaseName in config) {
-		
 		const currentDatabase = client.db(databaseName);
 		
 		// Loop through collections
@@ -51,8 +49,8 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		values.forEach((record, index) => {
 			
 			let {collectionName, qry, cursor} = queryPromises[index];
-			
 			if (record !== null) {
+				
 				mailgunData.push({
 					collectionName,
 					_id: record._id,
@@ -67,7 +65,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			let email = {
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
-				subject: 'Pluto Error Found',
+				subject: `Pluto Error Found [${keys.environment}]`,
 				html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
 					<th>Collection</th>
 					<th>Query</th>
