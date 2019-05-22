@@ -1,3 +1,5 @@
+# Pluto
+
 Pluto combs your Mongo database for bugs.
 
 Its operation is simple – you give it a list of queries to check against, and Pluto will inform you if it finds any records.
