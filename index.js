@@ -37,6 +37,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				collectionName,
 				promise: generalCursor.count(),
 				text: 'No documents found.',
+				pipeline: [{}],
 			});
 			
 			// Loop through queries
@@ -44,6 +45,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				config[databaseName][collectionName].map(({pipeline, text}) => {
 					const cursor = collection.aggregate(pipeline);
 					return {
+						pipeline,
 						cursor,
 						text,
 						collectionName,
@@ -57,12 +59,13 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	// Resolve all document retrieval promises
 	Promise.all(queryPromises.map(item => item.promise)).then(values => {
 		values.forEach((record, index) => {
-			let {collectionName, text, cursor} = queryPromises[index];
+			const {collectionName, text, cursor, pipeline} = queryPromises[index];
 			
-			if (record !== null) {
+			if (record instanceof Object || record === 0) {
 				mailgunData.push({
 					collectionName,
 					_id: record? record._id : 'N/A',
+					pipe: JSON.stringify(pipeline[0]),
 					text,
 				});
 			}
@@ -78,6 +81,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
 					<th>Collection</th>
 					<th>Text</th>
+					<th>1st Pipe</th>
 					<th>Example Id</th>
 				</tr>`,
 			};
@@ -86,6 +90,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				email.html += `<tr>
 					<td>${data.collectionName}</td>
 					<td>${data.text}</td>
+					<td>${data.pipe}</td>
 					<td>${data._id}</td>
 				</tr>`;
 			});
