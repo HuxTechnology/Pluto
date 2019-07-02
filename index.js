@@ -36,15 +36,16 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				cursor: generalCursor,
 				collectionName,
 				promise: generalCursor.count(),
+				text: 'No documents found.',
 			});
 			
 			// Loop through queries
 			queryPromises = queryPromises.concat(
-				config[databaseName][collectionName].map(qry => {
-					const cursor = collection.find(qry);
+				config[databaseName][collectionName].map(({pipeline, text}) => {
+					const cursor = collection.aggregate(pipeline);
 					return {
 						cursor,
-						qry,
+						text,
 						collectionName,
 						promise: cursor.next(),
 					};
@@ -56,20 +57,13 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	// Resolve all document retrieval promises
 	Promise.all(queryPromises.map(item => item.promise)).then(values => {
 		values.forEach((record, index) => {
-			let {collectionName, qry, cursor} = queryPromises[index];
+			let {collectionName, text, cursor} = queryPromises[index];
 			
-			if (typeof record === "object" && record !== null) {
+			if (record !== null) {
 				mailgunData.push({
 					collectionName,
-					_id: record._id,
-					qry: JSON.stringify(qry),
-				});
-			}
-			else if (record === 0) {
-				mailgunData.push({
-					collectionName,
-					qry: 'No documents found.',
-					_id: 'N/A',
+					_id: record? record._id : 'N/A',
+					text,
 				});
 			}
 			
@@ -83,7 +77,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				subject: `Pluto Error Found [${keys.environment}]`,
 				html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
 					<th>Collection</th>
-					<th>Query</th>
+					<th>Text</th>
 					<th>Example Id</th>
 				</tr>`,
 			};
@@ -91,7 +85,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			mailgunData.forEach(data => {
 				email.html += `<tr>
 					<td>${data.collectionName}</td>
-					<td>${data.qry}</td>
+					<td>${data.text}</td>
 					<td>${data._id}</td>
 				</tr>`;
 			});
