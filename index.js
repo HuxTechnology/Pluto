@@ -1,7 +1,9 @@
+const fs = require('fs');
 const {MongoClient} = require('mongodb');
 const Mailgun = require("mailgun-js");
 const keys = require('./keys');
 const config = require('./config');
+const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
 const MailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
 
@@ -45,6 +47,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				config[databaseName][collectionName].map(({pipeline, text}) => {
 					const cursor = collection.aggregate(pipeline);
 					return {
+						databaseName,
 						pipeline,
 						cursor,
 						text,
@@ -58,20 +61,57 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 	
 	// Resolve all document retrieval promises
 	Promise.all(queryPromises.map(item => item.promise)).then(values => {
+		
+		// Read the existing errors, if any
+		let existingErrors = [];
+		let newErrorsRaw = '';
+		const now = new Date();
+		try {
+			const existingErrorsRaw = fs.readFileSync(ERROR_FILE.PATH, ERROR_FILE.ENCODING);
+			if (existingErrorsRaw !== '')
+				existingErrors = existingErrorsRaw.split('\n').map(entry => entry.split('\t'));
+		}
+		catch(e) {
+			if (e.code !== 'ENOENT') {
+				console.log(`Error ${e.code} incurred while attempting to read file ${ERROR_FILE.PATH}.`);
+				return;
+			}
+		}
+		
 		values.forEach((record, index) => {
-			const {collectionName, text, cursor, pipeline} = queryPromises[index];
+			const {databaseName, collectionName, text, cursor, pipeline} = queryPromises[index];
+			let recordFoundAt;
 			
-			if (record instanceof Object || record === 0) {
-				mailgunData.push({
-					collectionName,
-					_id: record? record._id : 'N/A',
-					pipe: JSON.stringify(pipeline[0]),
-					text,
-				});
+			const alreadyFound = existingErrors.some(existing => {
+				const val = (
+					databaseName === existing[0] &&
+					collectionName === existing[1] &&
+					text === existing[2] &&
+					now < (existing[3] + NOTIFICATION_FREQUENCY)
+				);
+				
+				recordFoundAt = val? existing[3] : null;
+				return val;
+			});
+			const nonTrivialRecord = record instanceof Object || record === 0;
+			
+			if (nonTrivialRecord) {
+				if (!alreadyFound) {
+					mailgunData.push({
+						collectionName,
+						_id: record? record._id : 'N/A',
+						pipe: JSON.stringify(pipeline[0]),
+						text,
+					});
+				}
+				
+				newErrorsRaw += `${databaseName}\t${collectionName}\t${text}\t${recordFoundAt || new Date().getTime()}\n`;
 			}
 			
 			cursor.close();
 		});
+		
+		fs.writeFileSync(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING);
 		
 		if (mailgunData.length > 0) {
 			let email = {
