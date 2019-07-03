@@ -55,7 +55,7 @@ Its operation is simple – you give it a list of queries to check against, and 
 
 In the above example, Pluto starts with the `Gmail` database. It would then loop through both collections, `Accounts` and `Messages`, and check for any records that match the specified aggregation pipelines.  The `text` value is a simple English-readable sentence that describes what it's looking for. These are only referenced in the email notification.
 
-Pluto can be executed with any frequency (we run it hourly for Hux) but will not notify you of duplicates within the period defined as `NOTIFICATION_FREQUENCY` in `constants.js`. Continuing the above example, say Pluto encounters a record of a map image missing its heigh value. Pluto will send you an email, then ignore that failed check for the next day to avoid inundating you with emails. This value can be easily modified via `NOTIFICATION_FREQUENCY` in `constants.js`.
+Pluto can be executed with any frequency (we run it hourly for Hux) but will not notify you of duplicates within the period defined as `NOTIFICATION_FREQUENCY` in `constants.js`. Continuing the above example, say Pluto encounters a record of a map image missing its height value. Pluto will send you an email, then ignore that failed check for the next day to avoid inundating you with emails. This value can be easily modified via `NOTIFICATION_FREQUENCY` in `constants.js`.
 
 ## keys.js
 ```
