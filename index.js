@@ -102,6 +102,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 						_id: record? record._id : 'N/A',
 						pipe: JSON.stringify(pipeline[0]),
 						text,
+						record,
 					});
 				}
 				
@@ -126,16 +127,27 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 				</tr>`,
 			};
 			
+			let attachmentString = '';
+			
 			mailgunData.forEach(data => {
-				email.html += `<tr>
+				email.html += `
+				<tr>
 					<td>${data.collectionName}</td>
 					<td>${data.text}</td>
 					<td>${data.pipe}</td>
 					<td>${data._id}</td>
-				</tr>`;
+				</tr>
+				`;
+				
+				attachmentString += JSON.stringify(data.record, null, '\t') + '\n\n';
 			});
 			
 			email.html += `</table>`;
+			
+			email.attachment = new MailgunInstance.Attachment({
+				data: Buffer.from(attachmentString, 'utf8'),
+				filename: 'records.txt',
+			});
 			
 			MailgunInstance.messages().send(email, (mailgunError, body) => {
 				if(mailgunError) return console.log("Error sending email", mailgunError);
