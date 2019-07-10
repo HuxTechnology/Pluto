@@ -35,6 +35,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			// Check that the database isn't empty
 			const generalCursor = collection.find({});
 			queryPromises.push({
+				databaseName,
 				cursor: generalCursor,
 				collectionName,
 				promise: generalCursor.count(),
