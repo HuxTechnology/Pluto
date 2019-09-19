@@ -7,6 +7,17 @@ const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
 const MailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
 
+const reportError = (subject, html) => {
+	MailgunInstance.messages().send({
+		from: keys.mailgun.fromAddress,
+		to: keys.mailgun.toAddress,
+		subject: `[Error] ${subject}`,
+		html,
+	}, (mailgunError, body) => {
+		if(mailgunError) return console.log("Error sending email", mailgunError);
+	});
+};
+
 MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoError, client) => {
 	if(mongoError) {
 		MailgunInstance.messages().send({
