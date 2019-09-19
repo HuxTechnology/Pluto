@@ -7,19 +7,20 @@ const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
 const MailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
 
+const reportError = (subject, html) => {
+	MailgunInstance.messages().send({
+		from: keys.mailgun.fromAddress,
+		to: keys.mailgun.toAddress,
+		subject: `[Error] ${subject}`,
+		html,
+	}, (mailgunError, body) => {
+		if(mailgunError) return console.log("Error sending email", mailgunError);
+	});
+};
+
 MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoError, client) => {
-	if(mongoError) {
-		MailgunInstance.messages().send({
-			from: keys.mailgun.fromAddress,
-			to: keys.mailgun.toAddress,
-			subject: 'Error Initializing Pluto',
-			html: JSON.stringify(mongoError),
-		}, (mailgunError, body) => {
-			if(mailgunError) return console.log("Error sending email", mailgunError);
-		});
-		
-		return;
-	}
+	if(mongoError)
+		return reportError('Initializing Pluto', JSON.stringify(mongoError));
 	
 	let mailgunData = [];
 	let queryPromises = [];
@@ -83,12 +84,12 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			const {databaseName, collectionName, text, cursor, pipeline} = queryPromises[index];
 			let recordFoundAt;
 			
-			const alreadyFound = existingErrors.some(existing => {
+			const ignoreRecord = existingErrors.some(existing => {
 				const val = (
 					databaseName === existing[0] &&
 					collectionName === existing[1] &&
 					text === existing[2] &&
-					now < (existing[3] + NOTIFICATION_FREQUENCY)
+					now < (parseInt(existing[3]) + NOTIFICATION_FREQUENCY)
 				);
 				
 				recordFoundAt = val? existing[3] : null;
@@ -97,15 +98,14 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			const nonTrivialRecord = record instanceof Object || record === 0;
 			
 			if (nonTrivialRecord) {
-				if (!alreadyFound) {
-					mailgunData.push({
-						collectionName,
-						_id: record? record._id : 'N/A',
-						pipe: JSON.stringify(pipeline[0]),
-						text,
-						record,
-					});
-				}
+				mailgunData.push({
+					collectionName,
+					_id: record? record._id : 'N/A',
+					pipe: JSON.stringify(pipeline[0]),
+					text,
+					record,
+					ignoreRecord,
+				});
 				
 				newErrorsRaw += `${databaseName}\t${collectionName}\t${text}\t${recordFoundAt || new Date().getTime()}\n`;
 			}
@@ -113,9 +113,12 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			cursor.close();
 		});
 		
-		fs.writeFileSync(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING);
+		fs.writeFile(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING, error => {
+			if (error)
+				reportError('writeFile', JSON.stringify(error));
+		});
 		
-		if (mailgunData.length > 0) {
+		if (mailgunData.some(record => !record.ignoreRecord)) {
 			let email = {
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
