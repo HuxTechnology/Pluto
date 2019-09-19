@@ -113,9 +113,11 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			cursor.close();
 		});
 		
-		fs.writeFileSync(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING);
+		fs.writeFile(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING, error => {
+			if (error)
+				reportError('writeFile', JSON.stringify(error));
+		});
 		
-		if (mailgunData.length > 0) {
 		if (mailgunData.some(record => !record.ignoreRecord)) {
 			let email = {
 				from: keys.mailgun.fromAddress,
