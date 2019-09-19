@@ -89,7 +89,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 					databaseName === existing[0] &&
 					collectionName === existing[1] &&
 					text === existing[2] &&
-					now < (existing[3] + NOTIFICATION_FREQUENCY)
+					now < (parseInt(existing[3]) + NOTIFICATION_FREQUENCY)
 				);
 				
 				recordFoundAt = val? existing[3] : null;
