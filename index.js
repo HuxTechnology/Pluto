@@ -84,7 +84,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			const {databaseName, collectionName, text, cursor, pipeline} = queryPromises[index];
 			let recordFoundAt;
 			
-			const alreadyFound = existingErrors.some(existing => {
+			const ignoreRecord = existingErrors.some(existing => {
 				const val = (
 					databaseName === existing[0] &&
 					collectionName === existing[1] &&
@@ -98,15 +98,14 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 			const nonTrivialRecord = record instanceof Object || record === 0;
 			
 			if (nonTrivialRecord) {
-				if (!alreadyFound) {
-					mailgunData.push({
-						collectionName,
-						_id: record? record._id : 'N/A',
-						pipe: JSON.stringify(pipeline[0]),
-						text,
-						record,
-					});
-				}
+				mailgunData.push({
+					collectionName,
+					_id: record? record._id : 'N/A',
+					pipe: JSON.stringify(pipeline[0]),
+					text,
+					record,
+					ignoreRecord,
+				});
 				
 				newErrorsRaw += `${databaseName}\t${collectionName}\t${text}\t${recordFoundAt || new Date().getTime()}\n`;
 			}
@@ -117,6 +116,7 @@ MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoErro
 		fs.writeFileSync(ERROR_FILE.PATH, newErrorsRaw, ERROR_FILE.ENCODING);
 		
 		if (mailgunData.length > 0) {
+		if (mailgunData.some(record => !record.ignoreRecord)) {
 			let email = {
 				from: keys.mailgun.fromAddress,
 				to: keys.mailgun.toAddress,
