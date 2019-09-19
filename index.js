@@ -19,18 +19,8 @@ const reportError = (subject, html) => {
 };
 
 MongoClient.connect(keys.mongoConnectionURL, {useNewUrlParser: true}, (mongoError, client) => {
-	if(mongoError) {
-		MailgunInstance.messages().send({
-			from: keys.mailgun.fromAddress,
-			to: keys.mailgun.toAddress,
-			subject: 'Error Initializing Pluto',
-			html: JSON.stringify(mongoError),
-		}, (mailgunError, body) => {
-			if(mailgunError) return console.log("Error sending email", mailgunError);
-		});
-		
-		return;
-	}
+	if(mongoError)
+		return reportError('Initializing Pluto', JSON.stringify(mongoError));
 	
 	let mailgunData = [];
 	let queryPromises = [];
