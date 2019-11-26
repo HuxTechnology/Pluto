@@ -7,6 +7,10 @@ Its operation is simple – you give it a list of queries to check against, and 
 1. Scans your database for any records that match the specified query
 2. Sends your team an email with a list of any matching documents
 
+### Getting started
+1. Read the [Required Files](#requiredfiles) section
+2. Read the [Running Pluto](#runningpluto) section
+
 ### Required Files
 - `config.js` - a JSON file containing the databases, collections, and an array of queries to check in a hierarchical format
 - `keys.js` – a JSON file containing API keys and important configurations
@@ -71,9 +75,18 @@ module.exports = {
 };
 ```
 
+### Editable Files
+- `constants.js` - Think of this as an advanced settings file. Most users won't need to tweak these settings.
+
 ## constants.js
-Think of this as a settings file.
 ```
 ERROR_FILE // Contains information about how Pluto stores the failed checks
 NOTIFICATION_FREQUENCY // How often, in milliseconds, Pluto should notify you of the same failed check
 ```
+
+## Running Pluto
+Running Pluto couldn't be easier - simply execute `./exec.sh` in your shell of choice (Bash preferred).
+
+### exec.sh
+Flags
+- `-u remoteConfigFile.com` _optional_ This flag replaces your local `config.js` file with one hosted remotely. Helpful if you tie config files to your version control system (e.g. git, mercurial, etc).
