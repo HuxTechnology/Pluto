@@ -3,7 +3,8 @@ cd "$(dirname "$0")";
 while getopts ":u:" opt; do
 	case $opt in
 		u)
-			curl -s $OPTARG > config.js
+			echo "module.exports =" > config.js
+			curl -s $OPTARG >> config.js
 			;;
 		
 		\?)
