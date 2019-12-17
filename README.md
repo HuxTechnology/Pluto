@@ -86,5 +86,7 @@ module.exports = {
 Running Pluto couldn't be easier - simply execute `./exec.sh` in your shell of choice (Bash preferred).
 
 ### exec.sh
-Flags
-- `-u remoteConfigFile.com` [_optional_] This flag replaces your local `config.js` file with one hosted remotely. Helpful if you tie config files to your version control system (e.g. git, mercurial, etc).
+Arguments
+- `remoteConfigFile.com` [_optional_] This flag replaces your local `config.js` file with one hosted remotely. Helpful if you tie config files to your version control system (e.g. git, mercurial, etc).
+  - `./exec.sh` Runs Pluto with the local `config.js`
+  - `./exec.sh https://remoteConfigFile.com` Runs Pluto with the config file hosted on that domain. It ignores the local config.
