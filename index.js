@@ -5,7 +5,10 @@ const {fetchRemoteConfig, reportError} = require('./tools');
 const {mongoConnection, mailgunConnection} = require('./keys');
 const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
-const mailgunInstance = Mailgun({apiKey: mailgun.apiKey, domain: mailgun.domain});
+const mailgunInstance = Mailgun({
+	apiKey: mailgunConnection.apiKey,
+	domain: mailgunConnection.domain
+});
 
 const main = config => {
 	MongoClient.connect(mongoConnection.URL, mongoConnection.options, (mongoError, client) => {
@@ -110,8 +113,8 @@ const main = config => {
 			
 			if (mailgunData.some(record => !record.ignoreRecord)) {
 				let email = {
-					from: keys.mailgun.fromAddress,
-					to: keys.mailgun.toAddress,
+					from: mailgunConnection.fromAddress,
+					to: mailgunConnection.toAddress,
 					subject: `Pluto Error Found [${keys.environment}]`,
 					html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
 						<th>Collection</th>
