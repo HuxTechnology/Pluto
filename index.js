@@ -2,16 +2,13 @@ const fs = require('fs');
 const {MongoClient} = require('mongodb');
 const Mailgun = require("mailgun-js");
 const {fetchRemoteConfig, reportError} = require('./tools');
-const keys = require('./keys');
+const {mongoConnection, mailgunConnection} = require('./keys');
 const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
-const mailgunInstance = Mailgun({apiKey: keys.mailgun.apiKey, domain: keys.mailgun.domain});
+const mailgunInstance = Mailgun({apiKey: mailgun.apiKey, domain: mailgun.domain});
 
 const main = config => {
-	MongoClient.connect(keys.mongoConnectionURL, {
-		useNewUrlParser: true,
-		useUnifiedTopology: true,
-	}, (mongoError, client) => {
+	MongoClient.connect(mongoConnection.URL, mongoConnection.options, (mongoError, client) => {
 		if(mongoError)
 			return reportError(mailgunInstance, 'Initializing Pluto', JSON.stringify(mongoError));
 		
