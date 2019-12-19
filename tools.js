@@ -1,6 +1,6 @@
 const https = require('https');
 const EJSON = require('ejson');
-const keys = require('./keys');
+const {mailgunConnection} = require('./keys');
 
 module.exports = {
 	fetchRemoteConfig: (url, callback) => {
@@ -12,8 +12,8 @@ module.exports = {
 	},
 	reportError: (mailgunInstance, subject, html) => {
 		mailgunInstance.messages().send({
-			from: keys.mailgun.fromAddress,
-			to: keys.mailgun.toAddress,
+			from: mailgunConnection.fromAddress,
+			to: mailgunConnection.toAddress,
 			subject: `[Error] ${subject}`,
 			html,
 		}, mailgunError => {
