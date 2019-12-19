@@ -65,13 +65,18 @@ Pluto can be executed with any frequency (we run it hourly for Hux) but will not
 ```
 module.exports = {
 	environment: 'production',	// Arbitrary string displayed in email
-	mailgun: {
+	mailgunConnection: {
 		apiKey: 'key-abc123',
 		domain: 'hux.com',
 		fromAddress: 'mongoBugs@hux.com',
 		toAddress: 'developers@hux.com',
 	},
-	mongoConnectionURL: 'mongodb://user:password@hux.com:27017',
+	mongoConnection: {
+		URL: 'mongodb://user:password@hux.com:27017',
+		options: {
+			// Optional flags based on your database configuration
+		},
+	},
 };
 ```
 
