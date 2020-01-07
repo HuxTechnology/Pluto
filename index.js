@@ -2,7 +2,7 @@ const fs = require('fs');
 const {MongoClient} = require('mongodb');
 const Mailgun = require("mailgun-js");
 const {fetchRemoteConfig, reportError} = require('./tools');
-const {mongoConnection, mailgunConnection} = require('./keys');
+const {mongoConnection, mailgunConnection, environment} = require('./keys');
 const {ERROR_FILE, NOTIFICATION_FREQUENCY} = require('./constants');
 
 const mailgunInstance = Mailgun({
@@ -115,7 +115,7 @@ const main = config => {
 				let email = {
 					from: mailgunConnection.fromAddress,
 					to: mailgunConnection.toAddress,
-					subject: `Pluto Error Found [${keys.environment}]`,
+					subject: `Pluto Error Found [${environment}]`,
 					html: `<style>table{border-collapse: collapse;} tr {text-align:left;} td {border: 1px solid black;border-collapse: collapse;padding:5px;}</style><table><tr>
 						<th>Collection</th>
 						<th>Text</th>
